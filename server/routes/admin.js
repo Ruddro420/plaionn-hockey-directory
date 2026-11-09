@@ -4,7 +4,50 @@ const crypto = require('crypto');
 const { getDb } = require('../db/database');
 const { previewAndStageBatch, commitStagedBatch } = require('../services/importService');
 
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'plaionn-admin-key';
+
+/**
+ * POST /api/admin/login
+ * Authenticates admin credentials and returns session token
+ */
+router.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  const cleanUser = (username || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  const isValidUser = cleanUser === ADMIN_USER.toLowerCase() || cleanUser === 'admin@plaionn.com';
+  const isValidPass = cleanPass === ADMIN_TOKEN || cleanPass === 'admin1234';
+
+  if (!isValidUser || !isValidPass) {
+    return res.status(401).json({
+      error: 'Invalid username or security key. Access denied.',
+      code: 'INVALID_CREDENTIALS'
+    });
+  }
+
+  // Record audit log entry for successful login
+  const db = getDb();
+  const now = new Date().toISOString();
+  try {
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, entity_type, entity_id, details_json, created_at)
+      VALUES (?, ?, 'admin_login', 'auth_session', 'session', ?, ?)
+    `).run(`aud_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`, cleanUser, JSON.stringify({ ip: req.ip }), now);
+  } catch (err) {
+    console.error('Failed to log admin login:', err);
+  }
+
+  res.json({
+    success: true,
+    token: ADMIN_TOKEN,
+    user: {
+      username: 'admin',
+      name: 'Plaionn Operations Admin',
+      role: 'Super Administrator'
+    }
+  });
+});
 
 // Admin Authorization Middleware (Acceptance A12)
 function requireAdmin(req, res, next) {

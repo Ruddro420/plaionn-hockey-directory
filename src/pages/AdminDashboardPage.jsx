@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import {
   Shield, CheckCircle2, AlertCircle, RefreshCw, Upload,
-  Users, Building, FileSpreadsheet, Play, Check, X, Eye, Lock
+  Users, Building, FileSpreadsheet, Play, Check, X, Eye, EyeOff,
+  Lock, LogOut, KeyRound, User, ArrowRight
 } from 'lucide-react';
 
 export default function AdminDashboardPage({ navigate }) {
-  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('plaionn_admin_token') || 'plaionn-admin-key');
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'requests', 'teams', 'import', 'tests'
+  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('plaionn_admin_token') || '');
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('plaionn_admin_user') || 'null');
+    } catch {
+      return null;
+    }
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('plaionn_admin_token'));
 
+  // Login form state
+  const [loginUsername, setLoginUsername] = useState('admin');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState(null);
+
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'requests', 'teams', 'import', 'tests'
   const [overview, setOverview] = useState(null);
   const [requests, setRequests] = useState([]);
   const [pendingTeams, setPendingTeams] = useState([]);
@@ -25,9 +40,10 @@ export default function AdminDashboardPage({ navigate }) {
   const [runningTests, setRunningTests] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('plaionn_admin_token', adminToken);
-    loadTabData(activeTab);
-  }, [activeTab, adminToken]);
+    if (isAuthenticated && adminToken) {
+      loadTabData(activeTab);
+    }
+  }, [activeTab, isAuthenticated, adminToken]);
 
   async function apiFetch(endpoint, options = {}) {
     const headers = {
@@ -38,6 +54,52 @@ export default function AdminDashboardPage({ navigate }) {
     return fetch(endpoint, { ...options, headers });
   }
 
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError(null);
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: loginUsername,
+          password: loginPassword
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Authentication failed.');
+      }
+
+      localStorage.setItem('plaionn_admin_token', data.token);
+      localStorage.setItem('plaionn_admin_user', JSON.stringify(data.user));
+      setAdminToken(data.token);
+      setCurrentUser(data.user);
+      setIsAuthenticated(true);
+      setLoginPassword('');
+    } catch (err) {
+      setLoginError(err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('plaionn_admin_token');
+    localStorage.removeItem('plaionn_admin_user');
+    setAdminToken('');
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setOverview(null);
+    setRequests([]);
+    setPendingTeams([]);
+    setImportPreview(null);
+    setTestResults(null);
+  }
+
   async function loadTabData(tab) {
     setLoading(true);
     setActionMessage(null);
@@ -45,18 +107,25 @@ export default function AdminDashboardPage({ navigate }) {
       if (tab === 'overview') {
         const res = await apiFetch('/api/admin/overview');
         if (res.status === 401) {
-          setIsAuthenticated(false);
+          handleLogout();
           return;
         }
-        setIsAuthenticated(true);
         const data = await res.json();
         setOverview(data);
       } else if (tab === 'requests') {
         const res = await apiFetch('/api/admin/requests');
+        if (res.status === 401) {
+          handleLogout();
+          return;
+        }
         const data = await res.json();
         setRequests(data.data || []);
       } else if (tab === 'teams') {
         const res = await apiFetch('/api/admin/teams/pending');
+        if (res.status === 401) {
+          handleLogout();
+          return;
+        }
         const data = await res.json();
         setPendingTeams(data.data || []);
       }
@@ -113,13 +182,11 @@ export default function AdminDashboardPage({ navigate }) {
 
     setLoading(true);
     try {
-      // Basic CSV line parser
       const lines = csvText.trim().split('\n').map(l => l.trim()).filter(Boolean);
       const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
       const rows = [];
 
       for (let i = 1; i < lines.length; i++) {
-        // Regex to handle quoted CSV fields
         const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
         const rowObj = {};
         headers.forEach((h, idx) => {
@@ -190,9 +257,113 @@ New East York Rec League,Toronto,Independent ice,https://example.com/eastyork,Ne
     }
   }
 
+  // ==========================================
+  // VIEW 1: DEDICATED LOGIN SCREEN (If not authenticated)
+  // ==========================================
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-md w-full p-6 sm:p-8 space-y-6 relative overflow-hidden">
+          {/* Top subtle blue accent */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500"></div>
+
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-[#12202B] text-white flex items-center justify-center text-2xl mx-auto shadow-md">
+              🏒
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              Plaionn Operations Console
+            </h1>
+            <p className="text-xs text-slate-500">
+              Restricted access for league convenors, editors, and platform administrators.
+            </p>
+          </div>
+
+          {loginError && (
+            <div className="bg-red-50 border border-red-200 text-red-800 text-xs p-3 rounded-xl flex items-center gap-2 animate-in fade-in duration-150">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                <span>Admin Username or Email</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder="admin"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 focus:bg-white text-slate-900 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+                <span>Security Key / Password</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter security key"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 focus:bg-white text-slate-900 pr-10 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full bg-[#1463DF] hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Lock className="w-4 h-4" />
+                <span>{loginLoading ? 'Authenticating...' : 'Sign In to Operations Console'}</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Quick Credential Hint for Local Environment */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-[11px] text-slate-600 space-y-1">
+            <div className="font-semibold text-slate-800 flex items-center gap-1">
+              <Shield className="w-3.5 h-3.5 text-blue-600" />
+              <span>Default Local Credentials:</span>
+            </div>
+            <div className="font-mono text-[10px] text-slate-500 pl-4">
+              Username: <strong className="text-slate-700">admin</strong> • Key: <strong className="text-slate-700">plaionn-admin-key</strong>
+            </div>
+          </div>
+
+          <div className="text-[10px] text-slate-400 text-center leading-relaxed">
+            Protected under Acceptance Scenario A12. All login attempts and mutations are recorded to the immutable audit trail.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VIEW 2: AUTHENTICATED ADMIN OPERATIONS DASHBOARD
+  // ==========================================
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Admin Title Bar */}
+      {/* Admin Title Bar with Logout & Session Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
@@ -206,24 +377,29 @@ New East York Rec League,Toronto,Independent ice,https://example.com/eastyork,Ne
           </div>
         </div>
 
-        {/* Token input */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
-            <Lock className="w-3.5 h-3.5 text-slate-400 mr-1.5" />
-            <input
-              type="password"
-              value={adminToken}
-              onChange={(e) => setAdminToken(e.target.value)}
-              placeholder="Admin Token"
-              className="bg-transparent focus:outline-none w-36 text-slate-800"
-            />
+        {/* User Badge & Sign Out Button */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span>{currentUser?.name || 'Administrator'}</span>
+            <span className="text-slate-400">({currentUser?.role || 'Super Admin'})</span>
           </div>
+
           <button
             onClick={() => loadTabData(activeTab)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100"
+            className="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100"
             title="Refresh current view"
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="px-3.5 py-1.5 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            title="End admin session"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
