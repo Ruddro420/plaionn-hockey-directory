@@ -1,0 +1,38 @@
+{
+  "name": "plaionn-hockey-directory",
+  "version": "1.0.0",
+  "description": "Plaionn Hockey Directory — Greater Toronto Adult Hockey Discovery & Champions League Platform",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"node server/index.js\" \"vite --host\"",
+    "start": "node server/index.js",
+    "host": "npm run build && node server/index.js",
+    "server": "node server/index.js",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "seed": "node server/db/seed.js",
+    "test": "node tests/acceptance.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "concurrently": "^10.0.7",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "lucide-react": "^1.70.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-react": "^6.2.1",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.6"
+  }
+}

@@ -1,0 +1,19 @@
+ID,Phase,Work item,Acceptance references,Developer estimate,Dependencies
+P01,1,Architecture and responsive screen designs,A16 A17,,Existing app review
+P02,1,Data model migrations and evidence records,A03 A07,,P01
+P03,1,Admin authentication permissions and audit,A12 A21,,P02
+P04,1,CSV preview deduplication and reviewed import,A05 A06 A07,,P03
+P05,1,League finder and shareable filters,A01 A02,,P02
+P06,1,League profiles and safe public API,A03 A04,,P02
+P07,1,Home and curated city pages,A17 A18,,P05 P06
+P08,1,Interest forms email verification and consent,A08 A09 A10,,P02
+P09,1,Captain submission and moderated team profiles,A15,,P03 P08
+P10,1,Events and Champions League interest pages,A14,,P08
+P11,1,Listing requests and moderation queue,A11 A13,,P03 P08
+P12,1,Analytics freshness dashboard and exports,A20,,P04 P08
+P13,1,SEO accessibility security and performance QA,A04 A12 A16 A17 A18 A22,,P05 P06 P07 P10
+P14,1,Deployment backups training and handover,A19 A21,,Owner production decisions
+P15,2,Captain and operator accounts plus approved claims,Separate Phase 2 plan,,Phase 1 feedback
+P16,2,Recruitment saved items and consented alerts,Separate Phase 2 plan,,P15
+P17,3,Event registration payment and roster integration,Separate Phase 3 plan,,Existing app and provider assessment
+P18,3,Verified results and provisional rankings,Separate Phase 3 plan,,Results access and methodology approval

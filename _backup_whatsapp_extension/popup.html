@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { box-sizing: border-box; }
+  body { width: 430px; margin: 0; padding: 12px; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; background: #111b21; color: #e9edef; }
+  h1 { font-size: 15px; margin: 0 0 6px; }
+  .hint { color: #8696a0; margin-bottom: 8px; line-height: 1.4; }
+  textarea { width: 100%; height: 100px; resize: vertical; background: #202c33; color: #e9edef; border: 1px solid #2a3942; border-radius: 6px; padding: 8px; font: 12px/1.5 Consolas, monospace; }
+  textarea:focus { outline: 1px solid #00a884; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  button { background: #00a884; color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  button:hover { background: #06cf9c; }
+  button:disabled { background: #374248; color: #8a979e; cursor: not-allowed; }
+  button.sec { background: #2a3942; font-weight: 400; }
+  button.sec:hover { background: #374248; }
+  label { color: #8696a0; display: flex; align-items: center; gap: 6px; }
+  select, input#delay { background: #202c33; color: #e9edef; border: 1px solid #2a3942; border-radius: 4px; padding: 4px 6px; }
+  input#delay { width: 46px; }
+  .status { margin: 10px 0 2px; color: #ffcb6b; min-height: 16px; }
+  .debug { color: #667781; font-size: 11px; min-height: 13px; word-break: break-all; margin-bottom: 4px; }
+  #progressWrap { height: 5px; background: #202c33; border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+  #progressBar { height: 100%; width: 0%; background: #00a884; transition: width .3s; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid #222d34; font-size: 12px; }
+  th { color: #8696a0; }
+  #resultWrap { max-height: 230px; overflow-y: auto; }
+  td.ok { color: #25d366; }
+  td.no { color: #f15c6d; }
+  td.err { color: #ffcb6b; }
+  a { color: #53bdeb; text-decoration: none; cursor: pointer; }
+  a:hover { text-decoration: underline; }
+  #summary { color: #8696a0; margin-left: auto; }
+  .foot { color: #667781; font-size: 11px; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <h1>🟢 WhatsApp Number Checker <span style="color:#667781;font-size:11px;font-weight:400">v2</span></h1>
+  <div class="hint">Prottek line e ekta number, <b>country code soho</b> (jemon: +8801712345678)</div>
+
+  <textarea id="numbers" placeholder="+8801712345678&#10;+14155551234&#10;+919876543210"></textarea>
+
+  <div class="row">
+    <label>Method
+      <select id="method">
+        <option value="auto">Auto</option>
+        <option value="fast">Fast (API)</option>
+        <option value="safe">Safe (UI)</option>
+      </select>
+    </label>
+    <label>Delay <input id="delay" type="number" min="1" step="0.5" value="3" /> sec</label>
+    <button id="checkBtn">✓ Check</button>
+    <button id="stopBtn" class="sec" disabled>Stop</button>
+    <button id="clearBtn" class="sec">🗑</button>
+  </div>
+
+  <div id="status" class="status">WhatsApp Web login obosthay thakte hobe.</div>
+  <div id="debugLine" class="debug"></div>
+  <div id="progressWrap"><div id="progressBar"></div></div>
+
+  <div id="resultWrap">
+    <table>
+      <thead><tr><th>Number</th><th>Status</th><th>Chat</th></tr></thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </div>
+
+  <div class="row">
+    <button id="copyBtn" class="sec">📋 Copy</button>
+    <button id="csvBtn" class="sec">⬇ CSV</button>
+    <button id="dbgBtn" class="sec">🐞 Debug</button>
+    <span id="summary"></span>
+  </div>
+
+  <div class="foot">
+    ⚠️ Popup + WhatsApp Web tab khola rakhun. UI (Safe) mode e prottek number e 10–20s lagbe.
+  </div>
+
+<script src="popup.js"></script>
+</body>
+</html>
